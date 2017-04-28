@@ -222,6 +222,8 @@ bool clear_bootloader_message(std::string* err);
 
 // Writes the reboot-bootloader reboot reason to the bootloader_message.
 bool write_reboot_bootloader(std::string* err);
+// Writes the reboot-recovery reboot reason to the bootloader_message.
+bool write_reboot_recovery(std::string* err);
 
 // Read the wipe package from BCB (from offset WIPE_PACKAGE_OFFSET_IN_MISC).
 bool read_wipe_package(std::string* package_data, size_t size, std::string* err);
