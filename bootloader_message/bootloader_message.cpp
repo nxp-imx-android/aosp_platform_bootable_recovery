@@ -220,6 +220,19 @@ bool write_reboot_bootloader(std::string* err) {
   return write_bootloader_message(boot, err);
 }
 
+bool write_reboot_recovery(std::string* err) {
+  bootloader_message boot;
+  if (!read_bootloader_message(&boot, err)) {
+    return false;
+  }
+  if (boot.command[0] != '\0') {
+    *err = "Bootloader command pending.";
+    return false;
+  }
+  strlcpy(boot.command, "boot-recovery", sizeof(boot.command));
+  return write_bootloader_message(boot, err);
+}
+
 bool read_wipe_package(std::string* package_data, size_t size, std::string* err) {
   std::string misc_blk_device = get_misc_blk_device(err);
   if (misc_blk_device.empty()) {
