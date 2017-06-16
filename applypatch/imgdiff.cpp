@@ -639,7 +639,8 @@ static bool ReadImage(const char* filename, std::vector<ImageChunk>* chunks,
       size_t chunk_offset = pos;
 
       // The remaining data is too small to be a gzip chunk; treat them as a normal chunk.
-      if (sz - pos < GZIP_HEADER_LEN + GZIP_FOOTER_LEN) {
+      if ((sz - pos < GZIP_HEADER_LEN + GZIP_FOOTER_LEN) ||
+          ((unsigned char)*(img->data() + pos + GZIP_OSTYPE_OFFSET) != GZIP_OSTYPE_UNIX))  {
         chunks->emplace_back(CHUNK_NORMAL, pos, img, sz - pos);
         break;
       }
