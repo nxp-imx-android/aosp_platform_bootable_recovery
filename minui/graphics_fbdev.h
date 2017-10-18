@@ -33,8 +33,8 @@ class MinuiBackendFbdev : public MinuiBackend {
  private:
   void SetDisplayedFramebuffer(unsigned n);
 
-  GRSurface gr_framebuffer[2];
-  bool double_buffered;
+  GRSurface gr_framebuffer[3];
+  bool triple_buffered;
   GRSurface* gr_draw;
   int displayed_buffer;
   fb_var_screeninfo vi;
