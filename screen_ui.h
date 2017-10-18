@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2017 NXP
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,8 +117,8 @@ class ScreenRecoveryUI : public RecoveryUI {
   float progressScopeStart, progressScopeSize, progress;
   double progressScopeTime, progressScopeDuration;
 
-  // true when both graphics pages are the same (except for the progress bar).
-  bool pagesIdentical;
+  //Indicates framebuffer counts when use triple buffer.
+  int pagesIdentical;
 
   size_t text_cols_, text_rows_;
 
