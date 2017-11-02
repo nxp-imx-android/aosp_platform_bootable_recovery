@@ -120,7 +120,7 @@ GRSurfaceDrm* MinuiBackendDrm::DrmCreateSurface(int width, int height) {
 #elif defined(RECOVERY_RGBX)
   format = DRM_FORMAT_XBGR8888;
 #else
-  format = DRM_FORMAT_RGB565;
+  format = DRM_FORMAT_XBGR8888;
 #endif
 
   drm_mode_create_dumb create_dumb = {};
@@ -250,6 +250,9 @@ drmModeConnector* MinuiBackendDrm::FindMainMonitor(int fd, drmModeRes* resources
     DRM_MODE_CONNECTOR_LVDS,
     DRM_MODE_CONNECTOR_eDP,
     DRM_MODE_CONNECTOR_DSI,
+    DRM_MODE_CONNECTOR_HDMIA,
+    DRM_MODE_CONNECTOR_HDMIB,
+    DRM_MODE_CONNECTOR_TV
   };
 
   drmModeConnector* main_monitor_connector = nullptr;
@@ -298,9 +301,17 @@ GRSurface* MinuiBackendDrm::Init() {
     int ret = asprintf(&dev_name, DRM_DEV_NAME, DRM_DIR_NAME, i);
     if (ret < 0) continue;
 
+    printf("try %s device\n", dev_name);
     drm_fd = open(dev_name, O_RDWR, 0);
     free(dev_name);
     if (drm_fd < 0) continue;
+
+    ret = drmSetClientCap(drm_fd, DRM_CLIENT_CAP_ATOMIC, 1);
+    if (ret) {
+        printf("drmSetClientCap failed ret:%d\n", ret);
+        close(drm_fd);
+        continue;
+    }
 
     uint64_t cap = 0;
     /* We need dumb buffers. */
@@ -376,9 +387,11 @@ GRSurface* MinuiBackendDrm::Init() {
 GRSurface* MinuiBackendDrm::Flip() {
   int ret = drmModePageFlip(drm_fd, main_monitor_crtc->crtc_id,
                             GRSurfaceDrms[current_buffer]->fb_id, 0, nullptr);
-  if (ret < 0) {
+  while (ret < 0) {
     printf("drmModePageFlip failed ret=%d\n", ret);
-    return nullptr;
+    usleep(17000);
+    ret = drmModePageFlip(drm_fd, main_monitor_crtc->crtc_id,
+                            GRSurfaceDrms[current_buffer]->fb_id, 0, nullptr);
   }
   current_buffer = 1 - current_buffer;
   return GRSurfaceDrms[current_buffer];
