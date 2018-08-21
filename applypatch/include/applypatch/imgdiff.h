@@ -34,12 +34,6 @@ static constexpr size_t GZIP_HEADER_LEN = 10;
 // The gzip footer size really is fixed.
 static constexpr size_t GZIP_FOOTER_LEN = 8;
 
-// The gzip OS type offset.
-static constexpr size_t GZIP_OSTYPE_OFFSET = 9;
-
-// The gzip OS type unix.
-static constexpr unsigned char GZIP_OSTYPE_UNIX = 0x03;
-
 int imgdiff(int argc, const char** argv);
 
 #endif  // _APPLYPATCH_IMGDIFF_H
