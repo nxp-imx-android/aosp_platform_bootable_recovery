@@ -180,7 +180,7 @@ int ensure_path_unmounted(const char* path) {
   return unmount_mounted_volume(mv);
 }
 
-static int exec_cmd(const std::vector<std::string>& args) {
+__attribute__((unused)) static int exec_cmd(const std::vector<std::string>& args) {
   CHECK_NE(static_cast<size_t>(0), args.size());
 
   std::vector<char*> argv(args.size());
@@ -225,7 +225,7 @@ static int64_t get_file_size(int fd, uint64_t reserve_len) {
   return computed_size;
 }
 
-int format_volume(const char* volume, const char* directory) {
+int format_volume(const char* volume, __attribute__((unused))const char* directory) {
   const Volume* v = volume_for_path(volume);
   if (v == nullptr) {
     LOG(ERROR) << "unknown volume \"" << volume << "\"";
@@ -280,6 +280,15 @@ int format_volume(const char* volume, const char* directory) {
     }
   }
 
+#ifdef RECOVERY_FORMAT_SKIP
+  int fdd = open(v->blk_device, O_WRONLY | O_CREAT, 0644);
+  if (fdd == -1) {
+    PLOG(ERROR) << "format_volume: Failed to open block device" << v->blk_device;
+    return -1;
+  }
+  wipe_block_device(fdd, get_file_size(fdd));
+  close(fdd);
+#else
   if (strcmp(v->fs_type, "ext4") == 0) {
     static constexpr int kBlockSize = 4096;
     std::vector<std::string> mke2fs_args = {
@@ -359,6 +368,7 @@ int format_volume(const char* volume, const char* directory) {
     PLOG(ERROR) << "format_volume: Failed " << cmd << " on " << v->blk_device;
     return -1;
   }
+#endif
   return 0;
 }
 
