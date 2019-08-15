@@ -73,6 +73,7 @@ int ev_init(ev_callback input_cb, bool allow_touch_inputs) {
     return -1;
   }
 
+  sleep(2);
   bool epoll_ctl_failed = false;
   dirent* de;
   while ((de = readdir(dir.get())) != nullptr) {
