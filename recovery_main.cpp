@@ -466,7 +466,10 @@ int main(int argc, char** argv) {
     if (ret == Device::KEY_INTERRUPTED) {
       ret = action.exchange(ret);
       if (ret == Device::NO_ACTION) {
-        continue;
+        if (fastboot)
+          ret = Device::ENTER_FASTBOOT;
+        else
+          continue;
       }
     }
     switch (ret) {
@@ -523,8 +526,10 @@ int main(int argc, char** argv) {
         break;
 
       default:
-        ui->Print("Rebooting...\n");
-        reboot("reboot,");
+        if (!fastboot) {
+          ui->Print("Rebooting...\n");
+          reboot("reboot,");
+        }
         break;
     }
   }
