@@ -32,6 +32,7 @@ updater_common_static_libraries := \
     libdm \
     libfec \
     libfec_rs \
+    libavb \
     libverity_tree \
     libgtest_prod \
     liblog \
@@ -111,32 +112,3 @@ inc :=
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
 include $(BUILD_EXECUTABLE)
-
-# TODO(xunchang) move to bp file
-# update_host_simulator (host executable)
-# ===============================
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := update_host_simulator
-LOCAL_MODULE_HOST_OS := linux
-
-LOCAL_SRC_FILES := \
-    update_simulator_main.cpp
-
-LOCAL_C_INCLUDES := \
-    $(LOCAL_PATH)/include
-
-LOCAL_CFLAGS := \
-    -Wall \
-    -Werror
-
-LOCAL_STATIC_LIBRARIES := \
-    libupdater_host \
-    libupdater_core \
-    $(updater_common_static_libraries) \
-    libfstab \
-    libc++fs
-
-LOCAL_MODULE_CLASS := EXECUTABLES
-
-include $(BUILD_HOST_EXECUTABLE)
