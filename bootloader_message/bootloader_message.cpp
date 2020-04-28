@@ -27,7 +27,7 @@
 #include <android-base/properties.h>
 #include <android-base/stringprintf.h>
 #include <android-base/unique_fd.h>
-#include <fs_mgr.h>
+#include <fstab/fstab.h>
 
 static std::string get_misc_blk_device(std::string* err) {
   std::unique_ptr<fstab, decltype(&fs_mgr_free_fstab)> fstab(fs_mgr_read_fstab_default(),
