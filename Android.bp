@@ -72,12 +72,14 @@ cc_defaults {
     ],
 
     static_libs: [
+        "libc++fs",
         "libinstall",
         "librecovery_fastboot",
         "libminui",
         "librecovery_utils",
         "libotautil",
         "libsnapshot_nobinder",
+        "update_metadata-protos",
     ],
 }
 
@@ -94,6 +96,7 @@ cc_library_static {
     ],
 
     shared_libs: [
+        "libfusesideload",
         "librecovery_ui",
     ],
 }

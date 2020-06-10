@@ -30,6 +30,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <filesystem>
 #include <functional>
 #include <limits>
 #include <mutex>
@@ -330,15 +331,25 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
     return INSTALL_CORRUPT;
   }
 
-  bool is_ab = android::base::GetBoolProperty("ro.build.ab_update", false);
-  if (is_ab) {
+  bool package_is_ab = get_value(metadata, "ota-type") == OtaTypeToString(OtaType::AB);
+  bool device_supports_ab = android::base::GetBoolProperty("ro.build.ab_update", false);
+  bool ab_device_supports_nonab =
+      android::base::GetBoolProperty("ro.virtual_ab.allow_non_ab", false);
+  bool device_only_supports_ab = device_supports_ab && !ab_device_supports_nonab;
+
+  if (package_is_ab) {
     CHECK(package->GetType() == PackageType::kFile);
   }
 
-  // Verify against the metadata in the package first.
-  if (is_ab && !CheckPackageMetadata(metadata, OtaType::AB)) {
-    log_buffer->push_back(android::base::StringPrintf("error: %d", kUpdateBinaryCommandFailure));
-    return INSTALL_ERROR;
+  // Verify against the metadata in the package first. Expects A/B metadata if:
+  // Package declares itself as an A/B package
+  // Package does not declare itself as an A/B package, but device only supports A/B;
+  //   still calls CheckPackageMetadata to get a meaningful error message.
+  if (package_is_ab || device_only_supports_ab) {
+    if (!CheckPackageMetadata(metadata, OtaType::AB)) {
+      log_buffer->push_back(android::base::StringPrintf("error: %d", kUpdateBinaryCommandFailure));
+      return INSTALL_ERROR;
+    }
   }
 
   ReadSourceTargetBuild(metadata, log_buffer);
@@ -388,8 +399,9 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
 
   std::vector<std::string> args;
   if (auto setup_result =
-          is_ab ? SetUpAbUpdateCommands(package_path, zip, pipe_write.get(), &args)
-                : SetUpNonAbUpdateCommands(package_path, zip, retry_count, pipe_write.get(), &args);
+          package_is_ab
+              ? SetUpAbUpdateCommands(package_path, zip, pipe_write.get(), &args)
+              : SetUpNonAbUpdateCommands(package_path, zip, retry_count, pipe_write.get(), &args);
       !setup_result) {
     log_buffer->push_back(android::base::StringPrintf("error: %d", kUpdateBinaryCommandFailure));
     return INSTALL_CORRUPT;
@@ -638,6 +650,52 @@ bool verify_package(Package* package, RecoveryUI* ui) {
     LOG(ERROR) << "Signature verification failed";
     LOG(ERROR) << "error: " << kZipVerificationFailure;
     return false;
+  }
+  return true;
+}
+
+bool SetupPackageMount(const std::string& package_path, bool* should_use_fuse) {
+  CHECK(should_use_fuse != nullptr);
+
+  if (package_path.empty()) {
+    return false;
+  }
+
+  *should_use_fuse = true;
+  if (package_path[0] == '@') {
+    auto block_map_path = package_path.substr(1);
+    if (ensure_path_mounted(block_map_path) != 0) {
+      LOG(ERROR) << "Failed to mount " << block_map_path;
+      return false;
+    }
+    // uncrypt only produces block map only if the package stays on /data.
+    *should_use_fuse = false;
+    return true;
+  }
+
+  // Package is not a block map file.
+  if (ensure_path_mounted(package_path) != 0) {
+    LOG(ERROR) << "Failed to mount " << package_path;
+    return false;
+  }
+
+  // Reject the package if the input path doesn't equal the canonicalized path.
+  // e.g. /cache/../sdcard/update_package.
+  std::error_code ec;
+  auto canonical_path = std::filesystem::canonical(package_path, ec);
+  if (ec) {
+    LOG(ERROR) << "Failed to get canonical of " << package_path << ", " << ec.message();
+    return false;
+  }
+  if (canonical_path.string() != package_path) {
+    LOG(ERROR) << "Installation aborts. The canonical path " << canonical_path.string()
+               << " doesn't equal the original path " << package_path;
+    return false;
+  }
+
+  constexpr const char* CACHE_ROOT = "/cache";
+  if (android::base::StartsWith(package_path, CACHE_ROOT)) {
+    *should_use_fuse = false;
   }
   return true;
 }
