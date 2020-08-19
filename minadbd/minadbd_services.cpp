@@ -145,7 +145,9 @@ static MinadbdErrorCode RunAdbFuseSideload(int sfd, const std::string& args,
 // Sideload service always exits after serving an install command.
 static void SideloadHostService(unique_fd sfd, const std::string& args) {
   MinadbdCommandStatus status;
-  exit(RunAdbFuseSideload(sfd.get(), args, &status));
+  auto result = RunAdbFuseSideload(sfd.get(), args, &status);
+  sleep(1);
+  exit(result);
 }
 
 // Rescue service waits for the next command after an install command.
