@@ -1,0 +1,16 @@
+python_binary_host {
+    name: "gen_update_config",
+    srcs: [
+        "gen_update_config.py",
+    ],
+
+    version: {
+        py3: {
+            embedded_launcher: true,
+        },
+    },
+
+    libs: [
+        "releasetools_ota_from_target_files",
+    ],
+}
